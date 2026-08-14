@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+mkdir -p backups
+filename="backups/observatory-$(date -u +%Y%m%dT%H%M%SZ).dump"
+docker compose exec -T db pg_dump -U "${POSTGRES_USER:-observatory}" -d "${POSTGRES_DB:-observatory}" -Fc > "$filename"
+printf 'Wrote %s\n' "$filename"

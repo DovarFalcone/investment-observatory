@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Investment Observatory{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='styles.css') }}">
+</head>
+<body>
+  <header class="site-header">
+    <a class="wordmark" href="/overview">Observatory<span>／</span></a>
+    <nav aria-label="Primary navigation">
+      <a href="/overview" class="{% if request.url.path == '/overview' %}active{% endif %}">Overview</a>
+      <a href="/holdings" class="{% if request.url.path == '/holdings' %}active{% endif %}">Holdings</a>
+      <a href="/watchlist" class="{% if request.url.path == '/watchlist' %}active{% endif %}">Watchlist</a>
+      <a href="/settings" class="{% if request.url.path == '/settings' %}active{% endif %}">Settings</a>
+    </nav>
+    <button class="button button-small" data-dialog-open="add-security">Add security</button>
+  </header>
+
+  <main class="page-shell">
+    {% block content %}{% endblock %}
+  </main>
+
+  <dialog id="add-security" class="add-dialog">
+    <form method="dialog" class="dialog-close"><button aria-label="Close">×</button></form>
+    <p class="eyebrow">Add to your observatory</p>
+    <h2>Find a security</h2>
+    <p class="muted">Search by symbol or name. Prices are periodic and provider-dependent, not real-time.</p>
+    <form action="/search" method="get" class="search-form" data-search-form>
+      <label for="security-query">Symbol or name</label>
+      <div class="search-row"><input id="security-query" name="q" autocomplete="off" required placeholder="AAPL, Vanguard, ..."><button class="button" type="submit">Search</button></div>
+    </form>
+    <div data-search-results class="search-results" aria-live="polite"></div>
+  </dialog>
+  <script src="{{ url_for('static', path='app.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Overview · Investment Observatory{% endblock %}
+{% block content %}
+<section class="page-intro">
+  <div>
+    <p class="eyebrow">Daily review</p>
+    <h1>What changed?</h1>
+    <p class="lede">A quiet view of the securities you have chosen to follow.</p>
+  </div>
+  <div class="review-meta"><span class="status-dot"></span> Data updates hourly<br><span class="muted">No advice. No forecasts.</span></div>
+</section>
+
+{% if not rows %}
+<section class="empty-state">
+  <p class="eyebrow">A blank observatory is still an observatory</p>
+  <h2>Start with one security.</h2>
+  <p>Add something you own or simply want to keep an eye on. The first useful review starts with your choices, not sample data.</p>
+  <button class="button" data-dialog-open="add-security">Add your first security</button>
+</section>
+{% else %}
+<section class="review-grid">
+  <div class="section-heading"><div><p class="eyebrow">Tracked securities</p><h2>Movement since the last observation</h2></div><span class="muted">{{ rows|length }} securities</span></div>
+  <div class="security-table" role="table" aria-label="Tracked securities">
+    <div class="table-row table-head" role="row"><span>Security</span><span>Latest</span><span>Since prior</span><span>Data</span><span></span></div>
+    {% for row in rows %}
+    <div class="table-row" role="row">
+      <a class="security-name" href="/security/{{ row.item.security.id }}"><strong>{{ row.item.security.canonical_symbol }}</strong><small>{{ row.item.security.name }}</small></a>
+      <span class="numeric">{{ row.movement.price|money }} <small>{{ row.item.security.currency or '' }}</small></span>
+      <span class="numeric {{ row.movement.daily|status_class }}">{{ row.movement.daily|percentage }}</span>
+      <span class="freshness">{% if row.fresh_at %}{{ row.fresh_at.strftime('%b %-d, %H:%M UTC') }}{% else %}Waiting for first update{% endif %}</span>
+      <a class="text-link" href="/security/{{ row.item.security.id }}">Open →</a>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+<section class="two-column">
+  <div>
+    <div class="section-heading"><div><p class="eyebrow">Recent reporting</p><h2>Worth a look</h2></div></div>
+    {% if news %}
+      <div class="news-list">{% for article in news %}<article class="news-item"><a href="{{ article.canonical_url }}" target="_blank" rel="noopener"><h3>{{ article.title }}</h3></a><p>{{ article.publisher or article.source }} · {{ article.published_at.strftime('%b %-d, %Y') if article.published_at else 'Date unavailable' }}</p></article>{% endfor %}</div>
+    {% else %}<p class="muted">No linked headlines yet. News will appear after the next update.</p>{% endif %}
+  </div>
+  <aside class="note"><p class="eyebrow">How to read this</p><p>Movement is calculated from locally stored observations. A missing number means the app does not have enough trustworthy data—not zero movement.</p><p class="muted">This is a monitoring tool, not financial advice.</p></aside>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}{{ label }} · Investment Observatory{% endblock %}
+{% block content %}
+<section class="page-intro compact"><div><p class="eyebrow">Your list</p><h1>{{ label }}</h1><p class="lede">{% if kind == 'holdings' %}Securities you have marked as owned. Add numbers only when you want derived context.{% else %}Securities you want to understand over time.{% endif %}</p></div><button class="button" data-dialog-open="add-security">Add security</button></section>
+<div class="security-table" role="table" aria-label="{{ label }}">
+  <div class="table-row table-head" role="row"><span>Security</span><span>Latest</span><span>Daily change</span><span>Period</span><span></span></div>
+  {% for row in rows %}
+  <div class="table-row" role="row"><a class="security-name" href="/security/{{ row.item.security.id }}"><strong>{{ row.item.security.canonical_symbol }}</strong><small>{{ row.item.security.name }} · {{ row.item.security.asset_type|replace('_', ' ')|title }}</small></a><span class="numeric">{{ row.movement.price|money }}</span><span class="numeric {{ row.movement.daily|status_class }}">{{ row.movement.daily|percentage }}</span><span class="numeric {{ row.movement.period|status_class }}">{{ row.movement.period|percentage }}</span><form method="post" action="/items/{{ row.item.id }}/archive"><button class="quiet-button" type="submit">Remove</button></form></div>
+  {% else %}<div class="empty-inline"><p>No securities here yet.</p><button class="button button-small" data-dialog-open="add-security">Add one</button></div>{% endfor %}
+</div>
+{% endblock %}

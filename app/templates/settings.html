@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}Settings · Investment Observatory{% endblock %}
+{% block content %}
+<section class="page-intro compact"><div><p class="eyebrow">Configuration</p><h1>Settings</h1><p class="lede">Keep the observatory small, explicit, and easy to replace when a data source changes.</p></div></section>
+<section class="settings-panel"><div class="setting-row"><div><h2>Market data</h2><p>Yahoo public chart/search adapter · low-frequency personal use · isolated for replacement.</p></div><span class="tag">{{ config.market_provider if config else 'yahoo_chart' }}</span></div><div class="setting-row"><div><h2>News</h2><p>Google News RSS headline/link adapter. Article bodies are never copied into the database.</p></div><span class="tag">{{ config.news_provider if config else 'google_rss' }}</span></div><div class="setting-row"><div><h2>Refresh cadence</h2><p>Market data hourly; news every few hours, with failures recorded as partial rather than zero.</p></div><span class="tag">Hourly</span></div></section>
+<section class="note wide-note"><p class="eyebrow">Monitoring only</p><p>Nothing here is a recommendation, forecast, or instruction to buy or sell. Verify information with the original provider before making decisions.</p></section>
+{% endblock %}
