@@ -9,7 +9,7 @@ Only the latest commit on `master` is supported.
 Please do not open a public issue for a security vulnerability. Contact the repository owner through the private contact options on the [DovarFalcone GitHub profile](https://github.com/DovarFalcone), including:
 
 - a concise description of the issue;
-- the affected commit, route, workflow, or configuration;
+- the affected route, workflow, or configuration;
 - reproducible steps or a minimal proof of concept;
 - any suggested mitigation.
 
