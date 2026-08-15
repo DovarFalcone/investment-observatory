@@ -15,6 +15,7 @@ from app.services.market import (
     active_items,
     add_security_to_list,
     ensure_default_lists,
+    latest_movements,
     movement,
     price_points,
     sync_security,
@@ -84,10 +85,17 @@ def home() -> RedirectResponse:
 @app.get("/overview", response_class=HTMLResponse)
 def overview(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
     items = active_items(db)
-    rows = []
-    for item in items:
-        observations = price_points(db, item.security_id)
-        rows.append({"item": item, "movement": movement(observations), "fresh_at": observations[-1].retrieved_at if observations else None})
+    snapshots = latest_movements(db, [item.security_id for item in items])
+    rows = [
+        {
+            "item": item,
+            "movement": snapshots.get(item.security_id, {}).get(
+                "movement", {"price": None, "daily": None, "period": None}
+            ),
+            "fresh_at": snapshots.get(item.security_id, {}).get("fresh_at"),
+        }
+        for item in items
+    ]
     news = recent_news(db)
     return templates.TemplateResponse(
         request=request,
@@ -97,10 +105,18 @@ def overview(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
 
 
 def _render_list(kind: str, request: Request, db: Session) -> HTMLResponse:
-    rows = []
-    for item in active_items(db, kind):
-        observations = price_points(db, item.security_id)
-        rows.append({"item": item, "movement": movement(observations), "fresh_at": observations[-1].retrieved_at if observations else None})
+    items = active_items(db, kind)
+    snapshots = latest_movements(db, [item.security_id for item in items])
+    rows = [
+        {
+            "item": item,
+            "movement": snapshots.get(item.security_id, {}).get(
+                "movement", {"price": None, "daily": None, "period": None}
+            ),
+            "fresh_at": snapshots.get(item.security_id, {}).get("fresh_at"),
+        }
+        for item in items
+    ]
     label = "Holdings" if kind == "holdings" else "Watchlist"
     return templates.TemplateResponse(
         request=request,

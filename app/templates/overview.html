@@ -37,7 +37,7 @@
   <div>
     <div class="section-heading"><div><p class="eyebrow">Recent reporting</p><h2>Worth a look</h2></div></div>
     {% if news %}
-      <div class="news-list">{% for article in news %}<article class="news-item"><a href="{{ article.canonical_url }}" target="_blank" rel="noopener"><h3>{{ article.title }}</h3></a><p>{{ article.publisher or article.source }} · {{ article.published_at.strftime('%b %-d, %Y') if article.published_at else 'Date unavailable' }}</p></article>{% endfor %}</div>
+      <div class="news-list">{% for group in news %}<article class="news-item"><a href="{{ group.representative.canonical_url }}" target="_blank" rel="noopener"><h3>{{ group.representative.title }}</h3></a><p>{{ group.representative.publisher or group.representative.source }} · {{ group.representative.published_at.strftime('%b %-d, %Y') if group.representative.published_at else 'Date unavailable' }}{% if group.article_count > 1 %} · {{ group.article_count }} related reports from {{ group.source_count }} sources{% endif %}</p></article>{% endfor %}</div>
     {% else %}<p class="muted">No linked headlines yet. News will appear after the next update.</p>{% endif %}
   </div>
   <aside class="note"><p class="eyebrow">How to read this</p><p>Movement is calculated from locally stored observations. A missing number means the app does not have enough trustworthy data—not zero movement.</p><p class="muted">This is a monitoring tool, not financial advice.</p></aside>

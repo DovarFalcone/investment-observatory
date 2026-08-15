@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.db.models import ListItem, PriceObservation, Security, SyncRun, UserList
@@ -109,6 +109,53 @@ def price_points(db: Session, security_id: int, days: int = 370) -> list[PriceOb
             .order_by(PriceObservation.observed_at)
         ).all()
     )
+
+
+def latest_movements(
+    db: Session, security_ids: list[int], days: int = 370
+) -> dict[int, dict[str, object]]:
+    """Return movement anchors without loading each security's full history."""
+    unique_ids = list(dict.fromkeys(security_ids))
+    if not unique_ids:
+        return {}
+
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+    ranked = (
+        select(
+            PriceObservation.id.label("observation_id"),
+            func.row_number().over(
+                partition_by=PriceObservation.security_id,
+                order_by=PriceObservation.observed_at.desc(),
+            )
+            .label("latest_rank"),
+            func.row_number().over(
+                partition_by=PriceObservation.security_id,
+                order_by=PriceObservation.observed_at,
+            ).label("earliest_rank"),
+        )
+        .where(
+            PriceObservation.security_id.in_(unique_ids),
+            PriceObservation.observed_at >= since,
+        )
+        .subquery()
+    )
+    observations = db.scalars(
+        select(PriceObservation)
+        .join(ranked, PriceObservation.id == ranked.c.observation_id)
+        .where((ranked.c.latest_rank <= 2) | (ranked.c.earliest_rank == 1))
+        .order_by(PriceObservation.security_id, PriceObservation.observed_at)
+    ).all()
+
+    grouped: dict[int, list[PriceObservation]] = {}
+    for observation in observations:
+        grouped.setdefault(observation.security_id, []).append(observation)
+    return {
+        security_id: {
+            "movement": movement(points),
+            "fresh_at": points[-1].retrieved_at,
+        }
+        for security_id, points in grouped.items()
+    }
 
 
 def movement(observations: list[PriceObservation]) -> dict[str, Decimal | None]:
