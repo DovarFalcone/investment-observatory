@@ -2,13 +2,13 @@ services:
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-observatory}
-      POSTGRES_USER: ${POSTGRES_USER:-observatory}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-observatory}
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB must be set in .env}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER must be set in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-observatory} -d $${POSTGRES_DB:-observatory}"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -19,7 +19,7 @@ services:
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     env_file: .env
     environment:
-      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-observatory}:${POSTGRES_PASSWORD:-observatory}@db:5432/${POSTGRES_DB:-observatory}
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:?POSTGRES_USER must be set in .env}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}@db:5432/${POSTGRES_DB:?POSTGRES_DB must be set in .env}
     ports:
       - "${WEB_PORT:-8000}:8000"
     depends_on:
@@ -32,7 +32,7 @@ services:
     command: python -m app.worker
     env_file: .env
     environment:
-      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-observatory}:${POSTGRES_PASSWORD:-observatory}@db:5432/${POSTGRES_DB:-observatory}
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:?POSTGRES_USER must be set in .env}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}@db:5432/${POSTGRES_DB:?POSTGRES_DB must be set in .env}
     depends_on:
       db:
         condition: service_healthy

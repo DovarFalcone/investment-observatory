@@ -16,7 +16,7 @@ The default development configuration uses PostgreSQL. For the supported deploym
 
 ```bash
 cp .env.example .env
-# change secrets before exposing the service
+# replace every placeholder before exposing the service
 
 docker compose up -d --build
 docker compose exec web alembic upgrade head
@@ -36,3 +36,9 @@ The initial adapter uses Yahoo's public chart/search endpoints for personal, low
 - Back up PostgreSQL before upgrades; see `docs/backup.md`.
 
 Never commit `.env`, provider credentials, dumps, or personal holdings.
+
+## Security
+
+This repository is public by design, but deployments are intended for a trusted LAN or a reverse proxy with authentication. The Compose file refuses to start without explicit database credentials; the production deployment script generates those credentials on the server and stores them in a mode-600 `.env` file outside Git.
+
+The application is a monitoring tool, not a brokerage or account aggregator. Do not add brokerage credentials, transaction exports, or personal holdings data to this repository. See `SECURITY.md` for reporting a vulnerability.
