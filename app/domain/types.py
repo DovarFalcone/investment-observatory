@@ -24,6 +24,7 @@ class PricePoint:
     volume: Optional[int] = None
     currency: Optional[str] = None
     source_observed_at: Optional[datetime] = None
+    observation_type: str = "close"
 
 
 @dataclass(frozen=True)

@@ -85,6 +85,7 @@ def sync_security(db: Session, security: Security, days: int = 370) -> int:
                 volume=point.volume,
                 currency=point.currency or security.currency,
                 source=provider.name,
+                observation_type=point.observation_type,
                 source_observed_at=point.source_observed_at,
             )
         )

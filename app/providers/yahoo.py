@@ -97,6 +97,7 @@ class YahooChartProvider(MarketDataProvider):
                     volume=self._int_at(quote.get("volume"), index),
                     currency=meta.get("currency"),
                     source_observed_at=observed_at,
+                    observation_type="close",
                 )
             )
         return points

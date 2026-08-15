@@ -36,3 +36,42 @@ def test_empty_overview_does_not_show_fake_values(client: TestClient) -> None:
     assert response.status_code == 200
     assert "Start with one security" in response.text
     assert "12,345" not in response.text
+
+
+def test_watchlist_page_is_reachable(client: TestClient) -> None:
+    response = client.get("/watchlist")
+    assert response.status_code == 200
+    assert "Watchlist" in response.text
+
+
+def test_holdings_page_is_reachable(client: TestClient) -> None:
+    response = client.get("/holdings")
+    assert response.status_code == 200
+    assert "Holdings" in response.text
+
+
+def test_manual_refresh_redirects_when_provider_fails(client: TestClient, monkeypatch) -> None:
+    monkeypatch.setattr(main, "sync_security", lambda *args, **kwargs: None)
+    monkeypatch.setattr(main, "sync_news_for_security", lambda *args, **kwargs: None)
+    add_response = client.post(
+        "/items",
+        data={
+            "symbol": "TEST",
+            "name": "Test Security",
+            "asset_type": "stock",
+            "provider_symbol": "TEST",
+            "kind": "watchlist",
+        },
+        follow_redirects=False,
+    )
+    assert add_response.status_code == 303
+    security_path = add_response.headers["location"]
+
+    def fail_sync(*args, **kwargs):
+        raise RuntimeError("provider unavailable")
+
+    monkeypatch.setattr(main, "sync_security", fail_sync)
+    refresh_response = client.post(f"{security_path}/refresh", follow_redirects=False)
+
+    assert refresh_response.status_code == 303
+    assert refresh_response.headers["location"] == security_path

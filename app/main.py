@@ -96,8 +96,7 @@ def overview(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
     )
 
 
-@app.get("/{kind:watchlist|holdings}", response_class=HTMLResponse)
-def list_page(kind: str, request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
+def _render_list(kind: str, request: Request, db: Session) -> HTMLResponse:
     rows = []
     for item in active_items(db, kind):
         observations = price_points(db, item.security_id)
@@ -108,6 +107,16 @@ def list_page(kind: str, request: Request, db: Session = Depends(get_db)) -> HTM
         name="list.html",
         context={"request": request, "rows": rows, "kind": kind, "label": label},
     )
+
+
+@app.get("/watchlist", response_class=HTMLResponse)
+def watchlist_page(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
+    return _render_list("watchlist", request, db)
+
+
+@app.get("/holdings", response_class=HTMLResponse)
+def holdings_page(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
+    return _render_list("holdings", request, db)
 
 
 @app.get("/security/{security_id}", response_class=HTMLResponse)
@@ -191,8 +200,11 @@ def refresh_security(security_id: int, db: Session = Depends(get_db)) -> Redirec
     security = db.get(Security, security_id)
     if security is None:
         raise HTTPException(status_code=404, detail="Security not found")
-    sync_security(db, security)
-    sync_news_for_security(db, security)
+    try:
+        sync_security(db, security)
+        sync_news_for_security(db, security)
+    except Exception:
+        db.rollback()
     return RedirectResponse(f"/security/{security_id}", status_code=303)
 
 

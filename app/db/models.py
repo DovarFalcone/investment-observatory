@@ -111,6 +111,7 @@ class PriceObservation(Base):
     volume: Mapped[Optional[int]] = mapped_column(nullable=True)
     currency: Mapped[Optional[str]] = mapped_column(String(8), nullable=True)
     source: Mapped[str] = mapped_column(String(64))
+    observation_type: Mapped[str] = mapped_column(String(16), default="close")
     source_observed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     retrieved_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     status: Mapped[str] = mapped_column(String(16), default="ok")
