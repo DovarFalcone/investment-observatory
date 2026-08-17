@@ -121,3 +121,58 @@ def test_sleep_jitter_stays_near_configured_interval(monkeypatch) -> None:
     monkeypatch.setattr("app.worker.settings.market_update_minutes", 60)
     monkeypatch.setattr("app.worker.random.uniform", lambda low, high: 60)
     assert next_sleep_seconds() == 3660
+
+
+def test_price_points_filters_by_day_window() -> None:
+    from datetime import datetime, timedelta, timezone
+    from decimal import Decimal
+
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import Session
+    from sqlalchemy.pool import StaticPool
+
+    from app.services.market import price_points
+
+    engine = create_engine(
+        "sqlite:///:memory:", poolclass=StaticPool, connect_args={"check_same_thread": False}
+    )
+    Base.metadata.create_all(bind=engine)
+    now = datetime.now(timezone.utc)
+    with Session(engine) as db:
+        security = Security(canonical_symbol="ABC", name="Example", provider="test")
+        db.add(security)
+        db.flush()
+        db.add_all(
+            [
+                PriceObservation(
+                    security_id=security.id,
+                    observed_at=now - timedelta(days=40),
+                    session_date=(now - timedelta(days=40)).date(),
+                    price=Decimal("100"),
+                    source="test",
+                ),
+                PriceObservation(
+                    security_id=security.id,
+                    observed_at=now - timedelta(days=5),
+                    session_date=(now - timedelta(days=5)).date(),
+                    price=Decimal("105"),
+                    source="test",
+                ),
+                PriceObservation(
+                    security_id=security.id,
+                    observed_at=now,
+                    session_date=now.date(),
+                    price=Decimal("110"),
+                    source="test",
+                ),
+            ]
+        )
+        db.commit()
+
+        all_points = price_points(db, security.id, days=None)
+        month_points = price_points(db, security.id, days=31)
+        day_points = price_points(db, security.id, days=1)
+
+    assert len(all_points) == 3
+    assert len(month_points) == 2
+    assert len(day_points) == 1

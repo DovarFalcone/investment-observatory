@@ -153,24 +153,42 @@ def holdings_page(request: Request, db: Session = Depends(get_db)) -> HTMLRespon
     return _render_list("holdings", request, db)
 
 
+# Widest range matches the sync window (370 days ≈ 1 year of sessions).
+# If the sync window grows, add wider ranges here to match.
+CHART_RANGES: dict[str, int | None] = {
+    "1y": 370,
+    "6m": 182,
+    "1m": 31,
+    "1d": 1,
+}
+
+
 @app.get("/security/{security_id}", response_class=HTMLResponse)
-def security_detail(security_id: int, request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
+def security_detail(
+    security_id: int,
+    request: Request,
+    range: str = Query(default="1y"),
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
     security = db.get(Security, security_id)
     if security is None:
         raise HTTPException(status_code=404, detail="Security not found")
+    if range not in CHART_RANGES:
+        raise HTTPException(status_code=400, detail=f"range must be one of: {', '.join(CHART_RANGES)}")
     observations = price_points(db, security_id)
+    chart_observations = price_points(db, security_id, days=CHART_RANGES[range])
     holding_item = next(
         (item for item in active_items(db, "holdings") if item.security_id == security_id),
         None,
     )
     points = []
-    if observations:
-        prices = [float(point.price) for point in observations]
+    if chart_observations:
+        prices = [float(point.price) for point in chart_observations]
         minimum, maximum = min(prices), max(prices)
         spread = maximum - minimum or 1
-        for index, observation in enumerate(observations):
+        for index, observation in enumerate(chart_observations):
             points.append({
-                "x": round(index / max(len(observations) - 1, 1) * 720 + 40, 2),
+                "x": round(index / max(len(chart_observations) - 1, 1) * 720 + 40, 2),
                 "y": round(190 - ((float(observation.price) - minimum) / spread * 150), 2),
                 "date": observation.observed_at.strftime("%b %-d"),
                 "price": observation.price,
@@ -184,6 +202,9 @@ def security_detail(security_id: int, request: Request, db: Session = Depends(ge
             "observations": observations,
             "movement": movement(observations),
             "chart_points": points,
+            "chart_range": range,
+            "chart_ranges": list(CHART_RANGES),
+            "chart_point_count": len(chart_observations),
             "news": recent_news(db, security_id),
             "holding_context": holdings_service.context_view(
                 holding_item.holding if holding_item else None,

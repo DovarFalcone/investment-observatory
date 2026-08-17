@@ -97,6 +97,11 @@ input { min-width: 0; width: 100%; }
 .chart-axis { stroke: var(--rule); stroke-width: 1; }
 .chart-line { fill: none; stroke: var(--teal); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2.5; }
 .chart-labels { color: var(--muted); display: flex; font-size: .72rem; justify-content: space-between; padding: 0 5%; }
+.chart-ranges { display: flex; flex-wrap: wrap; gap: 6px; margin: 18px 0 6px; }
+.chart-range { border: 1px solid var(--rule); color: var(--muted); font-size: .72rem; letter-spacing: .06em; padding: 4px 9px; text-transform: uppercase; }
+.chart-range:hover { border-color: var(--teal); color: var(--text-strong); }
+.chart-range.active { background: var(--surface-raised); border-color: var(--teal); color: var(--teal); }
+.chart-dot { fill: var(--teal); }
 .detail-lower { border-top: 1px solid var(--rule); padding-top: 36px; }
 .empty-inline { color: var(--muted); padding: 26px 0; }
 .settings-panel { border-bottom: 1px solid var(--rule); border-top: 1px solid var(--rule); margin-bottom: 48px; max-width: 800px; }

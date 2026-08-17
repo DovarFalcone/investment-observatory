@@ -100,15 +100,16 @@ def sync_security(db: Session, security: Security, days: int = 370) -> int:
     return inserted
 
 
-def price_points(db: Session, security_id: int, days: int = 370) -> list[PriceObservation]:
-    since = datetime.now(timezone.utc) - timedelta(days=days)
-    return list(
-        db.scalars(
-            select(PriceObservation)
-            .where(PriceObservation.security_id == security_id, PriceObservation.observed_at >= since)
-            .order_by(PriceObservation.observed_at)
-        ).all()
+def price_points(db: Session, security_id: int, days: int | None = 370) -> list[PriceObservation]:
+    query = (
+        select(PriceObservation)
+        .where(PriceObservation.security_id == security_id)
+        .order_by(PriceObservation.observed_at.asc(), PriceObservation.id.asc())
     )
+    if days is not None:
+        since = datetime.now(timezone.utc) - timedelta(days=days)
+        query = query.where(PriceObservation.observed_at >= since)
+    return list(db.scalars(query).all())
 
 
 def latest_movements(

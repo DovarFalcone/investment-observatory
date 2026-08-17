@@ -189,3 +189,66 @@ def test_holding_context_rejects_negative_shares(client: TestClient) -> None:
 
     assert response.status_code == 400
     assert "negative" in response.json()["detail"]
+
+
+def test_security_detail_chart_range_toggles(client: TestClient) -> None:
+    from datetime import datetime, timedelta, timezone
+    from decimal import Decimal
+
+    from app.db.models import PriceObservation, Security
+
+    with session_module.SessionLocal() as db:
+        security = Security(canonical_symbol="RNG", name="Range Test", provider="test")
+        db.add(security)
+        db.flush()
+        now = datetime.now(timezone.utc)
+        db.add_all(
+            [
+                PriceObservation(
+                    security_id=security.id,
+                    observed_at=now - timedelta(days=200),
+                    session_date=(now - timedelta(days=200)).date(),
+                    price=Decimal("100"),
+                    source="test",
+                ),
+                PriceObservation(
+                    security_id=security.id,
+                    observed_at=now - timedelta(days=10),
+                    session_date=(now - timedelta(days=10)).date(),
+                    price=Decimal("105"),
+                    source="test",
+                ),
+                PriceObservation(
+                    security_id=security.id,
+                    observed_at=now,
+                    session_date=now.date(),
+                    price=Decimal("110"),
+                    source="test",
+                ),
+            ]
+        )
+        db.commit()
+        security_id = security.id
+
+    all_page = client.get(f"/security/{security_id}")
+    assert all_page.status_code == 200
+    assert "3 points" in all_page.text
+    assert "range=6m" in all_page.text
+    assert 'class="chart-range active"' in all_page.text
+    assert ">1Y</a>" in all_page.text
+    assert ">ALL</a>" not in all_page.text
+    assert ">5Y</a>" not in all_page.text
+
+    month_page = client.get(f"/security/{security_id}?range=1m")
+    assert month_page.status_code == 200
+    assert "2 points" in month_page.text
+    assert 'class="chart-range active"' in month_page.text
+    assert ">1M</a>" in month_page.text
+
+    day_page = client.get(f"/security/{security_id}?range=1d")
+    assert day_page.status_code == 200
+    assert "1 points" in day_page.text
+    assert "intraday movement is not tracked" in day_page.text
+
+    invalid = client.get(f"/security/{security_id}?range=3y")
+    assert invalid.status_code == 400
