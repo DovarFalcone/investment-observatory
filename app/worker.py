@@ -14,6 +14,14 @@ from app.services.news import sync_news_for_security
 logger = logging.getLogger(__name__)
 
 
+def configure_logging() -> None:
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s %(message)s",
+        force=True,
+    )
+
+
 def should_skip_market_sync(db, now: datetime | None = None) -> bool:
     """Skip quiet weekend polling only when every item has the expected Friday close."""
     current = now or datetime.now(timezone.utc)
@@ -75,9 +83,11 @@ def run_news_sync() -> None:
             except Exception:
                 db.rollback()
                 logger.exception("News sync failed symbol=%s", item.security.canonical_symbol)
+            time.sleep(2)
 
 
 def main() -> None:
+    configure_logging()
     Base.metadata.create_all(bind=session.engine)
     last_news = datetime.min.replace(tzinfo=timezone.utc)
     while True:

@@ -1,6 +1,6 @@
+import time
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
-from urllib.parse import quote_plus
 
 import feedparser
 import httpx
@@ -17,20 +17,30 @@ class GoogleRssNewsProvider(NewsProvider):
     base_url = "https://news.google.com/rss/search"
 
     def recent(self, symbol: str, name: str) -> list[NewsArticle]:
-        query = quote_plus(f'"{symbol}" {name}')
-        try:
-            response = httpx.get(
-                self.base_url,
-                params={"q": query, "hl": "en-US", "gl": "US", "ceid": "US:en"},
-                headers={"User-Agent": settings.user_agent},
-                timeout=settings.http_timeout_seconds,
-                follow_redirects=True,
-            )
-            response.raise_for_status()
-        except httpx.HTTPError:
-            return []
+        query = f'"{symbol}" {name} when:7d'
+        for attempt in (1, 2):
+            try:
+                response = httpx.get(
+                    self.base_url,
+                    params={"q": query, "hl": "en-US", "gl": "US", "ceid": "US:en"},
+                    headers={"User-Agent": settings.user_agent},
+                    timeout=settings.http_timeout_seconds,
+                    follow_redirects=True,
+                )
+                response.raise_for_status()
+            except httpx.HTTPError:
+                if attempt == 2:
+                    return []
+                time.sleep(2)
+                continue
 
-        parsed = feedparser.parse(response.content)
+            parsed = feedparser.parse(response.content)
+            if parsed.entries:
+                break
+            if attempt == 2:
+                return []
+            time.sleep(2)
+
         articles: list[NewsArticle] = []
         for entry in parsed.entries[:20]:
             published_at = self._published_at(entry)
