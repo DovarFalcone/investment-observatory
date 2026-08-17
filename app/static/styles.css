@@ -106,6 +106,22 @@ input { min-width: 0; width: 100%; }
 .setting-row p { color: var(--muted); font-size: .82rem; margin-bottom: 0; }
 .tag { border: 1px solid var(--rule); color: var(--teal); font-size: .72rem; padding: 5px 8px; white-space: nowrap; }
 .wide-note { max-width: 800px; }
+.holding-context { border-bottom: 1px solid var(--rule); }
+.holding-context summary { align-items: baseline; color: var(--muted); cursor: pointer; display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: .82rem; list-style: none; padding: 10px 0 10px 2px; }
+.holding-context summary::-webkit-details-marker { display: none; }
+.holding-context summary strong { color: var(--text-strong); font-variant-numeric: tabular-nums; }
+.holding-context summary .text-link { margin-left: auto; }
+.holding-form { border-top: 1px solid var(--rule); display: grid; gap: 14px 20px; grid-template-columns: repeat(4, minmax(110px, 1fr)); padding: 16px 0 20px 2px; }
+.holding-field { display: flex; flex-direction: column; gap: 5px; }
+.holding-field label { color: var(--muted); font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; }
+.holding-field-note { grid-column: 1 / -1; }
+.holding-actions { align-items: center; display: flex; gap: 14px; grid-column: 1 / -1; }
+.small-note { font-size: .74rem; }
+.your-holding { border-top: 1px solid var(--rule); margin-top: 48px; padding-top: 32px; }
+.holding-derived { display: grid; gap: 28px; grid-template-columns: repeat(3, minmax(120px, 1fr)); max-width: 640px; padding: 20px 0; }
+.holding-derived .label { color: var(--muted); display: block; font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; }
+.holding-derived strong { color: var(--text-strong); font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+.holding-derived small { font-size: .7rem; }
 @media (max-width: 760px) {
   .site-header { align-items: flex-start; flex-wrap: wrap; gap: 18px; padding: 18px 20px; }
   nav { flex-basis: 100%; gap: 16px; order: 3; }
@@ -128,4 +144,6 @@ input { min-width: 0; width: 100%; }
   .candidate { align-items: start; grid-template-columns: 1fr auto; }
   .candidate select { grid-column: 1; }
   .candidate button { grid-column: 2; grid-row: 2; }
+  .holding-form { grid-template-columns: 1fr 1fr; }
+  .holding-derived { grid-template-columns: 1fr; gap: 16px; }
 }

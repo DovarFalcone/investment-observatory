@@ -1,6 +1,8 @@
 from datetime import date as calendar_date
 from datetime import datetime, timezone
+from decimal import Decimal
 from pathlib import Path
+from typing import cast
 
 from fastapi import Depends, FastAPI, Form, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -12,6 +14,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.db import session
 from app.db.models import ListItem, Security
+from app.services import holdings as holdings_service
 from app.services.market import (
     active_items,
     add_security_to_list,
@@ -116,6 +119,19 @@ def _render_list(kind: str, request: Request, db: Session) -> HTMLResponse:
                 "movement", {"price": None, "daily": None, "period": None}
             ),
             "fresh_at": snapshots.get(item.security_id, {}).get("fresh_at"),
+            "context": holdings_service.context_view(
+                item.holding,
+                cast(
+                    Decimal | None,
+                    cast(
+                        dict[str, object],
+                        snapshots.get(item.security_id, {}).get("movement", {}),
+                    ).get("price"),
+                ),
+                item.security.currency,
+            )
+            if kind == "holdings"
+            else None,
         }
         for item in items
     ]
@@ -143,6 +159,10 @@ def security_detail(security_id: int, request: Request, db: Session = Depends(ge
     if security is None:
         raise HTTPException(status_code=404, detail="Security not found")
     observations = price_points(db, security_id)
+    holding_item = next(
+        (item for item in active_items(db, "holdings") if item.security_id == security_id),
+        None,
+    )
     points = []
     if observations:
         prices = [float(point.price) for point in observations]
@@ -165,6 +185,12 @@ def security_detail(security_id: int, request: Request, db: Session = Depends(ge
             "movement": movement(observations),
             "chart_points": points,
             "news": recent_news(db, security_id),
+            "holding_context": holdings_service.context_view(
+                holding_item.holding if holding_item else None,
+                observations[-1].price if observations else None,
+                security.currency,
+            ),
+            "holding_item_id": holding_item.id if holding_item else None,
         },
     )
 
@@ -227,6 +253,32 @@ def archive_item(item_id: int, db: Session = Depends(get_db)) -> RedirectRespons
     item.archived_at = datetime.now(timezone.utc)
     db.commit()
     return RedirectResponse(f"/{item.user_list.kind}", status_code=303)
+
+
+@app.post("/items/{item_id}/holding")
+def update_holding_context(
+    item_id: int,
+    shares: str = Form(""),
+    average_cost: str = Form(""),
+    cost_currency: str = Form(""),
+    note: str = Form(""),
+    db: Session = Depends(get_db),
+) -> RedirectResponse:
+    item = holdings_service.get_item(db, item_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="List item not found")
+    try:
+        holdings_service.save_holding_context(
+            db,
+            item,
+            holdings_service.parse_optional_decimal(shares, "Shares"),
+            holdings_service.parse_optional_decimal(average_cost, "Average cost"),
+            cost_currency,
+            note,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return RedirectResponse("/holdings", status_code=303)
 
 
 @app.post("/security/{security_id}/refresh")

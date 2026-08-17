@@ -1,11 +1,44 @@
 {% extends "base.html" %}
 {% block title %}{{ label }} · Investment Observatory{% endblock %}
 {% block content %}
-<section class="page-intro compact"><div><p class="eyebrow">Your list</p><h1>{{ label }}</h1><p class="lede">{% if kind == 'holdings' %}Securities you have marked as owned. Add numbers only when you want derived context.{% else %}Securities you want to understand over time.{% endif %}</p></div><button class="button" data-dialog-open="add-security">Add security</button></section>
+<section class="page-intro compact"><div><p class="eyebrow">Your list</p><h1>{{ label }}</h1><p class="lede">{% if kind == 'holdings' %}Securities you have marked as owned. Add context only when you want derived numbers — nothing is inferred.{% else %}Securities you want to understand over time.{% endif %}</p></div><button class="button" data-dialog-open="add-security">Add security</button></section>
 <div class="security-table" role="table" aria-label="{{ label }}">
   <div class="table-row table-head" role="row"><span>Security</span><span>Latest</span><span>Daily change</span><span>Period</span><span></span></div>
   {% for row in rows %}
   <div class="table-row" role="row"><a class="security-name" href="/security/{{ row.item.security.id }}"><strong>{{ row.item.security.canonical_symbol }}</strong><small>{{ row.item.security.name }} · {{ row.item.security.asset_type|replace('_', ' ')|title }}</small></a><span class="numeric">{{ row.movement.price|money }}</span><span class="numeric {{ row.movement.daily|status_class }}">{{ row.movement.daily|percentage }}</span><span class="numeric {{ row.movement.period|status_class }}">{{ row.movement.period|percentage }}</span><form method="post" action="/items/{{ row.item.id }}/archive"><button class="quiet-button" type="submit">Remove</button></form></div>
+  {% if kind == 'holdings' %}
+  <details class="holding-context" {% if row.context.has_annotation %}open{% endif %}>
+    <summary>
+      {% if row.context.has_annotation %}
+        {% set derived = row.context.derived %}
+        {% if derived.status == 'ok' %}
+          <span>Market value <strong>{{ derived.market_value|money }}</strong> <small>{{ derived.currency or '' }}</small></span>
+          <span class="{{ derived.unrealized_amount|status_class }}">Unrealized {{ derived.unrealized_amount|money }} ({{ derived.unrealized_percent|percentage }})</span>
+        {% elif derived.status == 'missing_price' %}
+          <span class="muted">Waiting for a stored price before derived values can appear.</span>
+        {% elif derived.status == 'missing_cost' %}
+          <span class="muted">Add average cost to see unrealized change.</span>
+        {% elif derived.status == 'currency_mismatch' %}
+          <span class="muted">Cost currency does not match price currency — derived values withheld.</span>
+        {% else %}
+          <span class="muted">Entered {{ row.context.shares }} shares</span>
+        {% endif %}
+        {% if row.context.note %}<small class="muted">· {{ row.context.note }}</small>{% endif %}
+        <span class="text-link">Edit context</span>
+      {% else %}
+        <span class="muted">No context entered — optional shares, average cost, note.</span>
+        <span class="text-link">Add context</span>
+      {% endif %}
+    </summary>
+    <form method="post" action="/items/{{ row.item.id }}/holding" class="holding-form">
+      <div class="holding-field"><label for="shares-{{ row.item.id }}">Shares</label><input id="shares-{{ row.item.id }}" name="shares" type="number" step="any" min="0" placeholder="e.g. 12.5" value="{{ row.context.shares if row.context.shares is not none else '' }}"></div>
+      <div class="holding-field"><label for="cost-{{ row.item.id }}">Average cost</label><input id="cost-{{ row.item.id }}" name="average_cost" type="number" step="any" min="0" placeholder="e.g. 178.40" value="{{ row.context.average_cost if row.context.average_cost is not none else '' }}"></div>
+      <div class="holding-field"><label for="currency-{{ row.item.id }}">Cost currency</label><input id="currency-{{ row.item.id }}" name="cost_currency" maxlength="8" placeholder="{{ row.item.security.currency or 'USD' }}" value="{{ row.context.cost_currency or '' }}"></div>
+      <div class="holding-field holding-field-note"><label for="note-{{ row.item.id }}">Note</label><input id="note-{{ row.item.id }}" name="note" maxlength="280" placeholder="Optional personal note" value="{{ row.context.note or '' }}"></div>
+      <div class="holding-actions"><button class="button button-small" type="submit">Save</button><span class="muted small-note">Leave everything empty to clear context.</span></div>
+    </form>
+  </details>
+  {% endif %}
   {% else %}<div class="empty-inline"><p>No securities here yet.</p><button class="button button-small" data-dialog-open="add-security">Add one</button></div>{% endfor %}
 </div>
 {% endblock %}

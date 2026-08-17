@@ -135,3 +135,57 @@ def test_weekly_review_endpoint_requires_both_dates(client: TestClient) -> None:
 
     assert response.status_code == 400
     assert response.json()["detail"] == "start and end must be provided together"
+
+
+def test_holding_context_save_and_display(client: TestClient) -> None:
+    from app.db.models import ListItem, Security, UserList
+
+    with session_module.SessionLocal() as db:
+        security = Security(canonical_symbol="ABC", name="Example", provider="test")
+        user_list = db.query(UserList).filter_by(kind="holdings").one()
+        db.add(security)
+        db.flush()
+        item = ListItem(user_list=user_list, security=security, sort_order=1)
+        db.add(item)
+        db.commit()
+        item_id = item.id
+
+    save_response = client.post(
+        f"/items/{item_id}/holding",
+        data={
+            "shares": "12.5",
+            "average_cost": "178.40",
+            "cost_currency": "USD",
+            "note": "Core position",
+        },
+        follow_redirects=False,
+    )
+    assert save_response.status_code == 303
+    assert save_response.headers["location"] == "/holdings"
+
+    holdings_page = client.get("/holdings")
+    assert holdings_page.status_code == 200
+    assert "Core position" in holdings_page.text
+    assert "Edit context" in holdings_page.text
+
+
+def test_holding_context_rejects_negative_shares(client: TestClient) -> None:
+    from app.db.models import ListItem, Security, UserList
+
+    with session_module.SessionLocal() as db:
+        security = Security(canonical_symbol="DEF", name="Another", provider="test")
+        user_list = db.query(UserList).filter_by(kind="holdings").one()
+        db.add(security)
+        db.flush()
+        item = ListItem(user_list=user_list, security=security, sort_order=2)
+        db.add(item)
+        db.commit()
+        item_id = item.id
+
+    response = client.post(
+        f"/items/{item_id}/holding",
+        data={"shares": "-5", "average_cost": "", "cost_currency": "", "note": ""},
+    )
+
+    assert response.status_code == 400
+    assert "negative" in response.json()["detail"]
