@@ -24,20 +24,6 @@ docker compose exec web alembic upgrade head
 
 Open http://localhost:8000. The first run intentionally contains no fabricated sample data; add a real security through the search action.
 
-## LAN deployment
-
-`deploy.sh` keeps deployment targets out of this public repository. Set these variables in your local shell or an ignored local environment file before running it:
-
-```bash
-export OBSERVATORY_SERVER='dennis@your-server'
-export OBSERVATORY_REMOTE_DIR='/srv/investment-observatory'
-export OBSERVATORY_SSH_KEY="$HOME/.ssh/your-deploy-key"
-export OBSERVATORY_URL='http://your-private-host:8002'
-./deploy.sh
-```
-
-The server-side `.env` and PostgreSQL volume remain outside Git. The deployment script never copies credentials into the repository.
-
 ## Data sources
 
 The initial adapter uses Yahoo's public chart/search endpoints for personal, low-frequency use and Google News RSS for linked headlines. Both are isolated behind provider interfaces and can be replaced. See `docs/data-sources.md` for limitations, rate protection, and the requirements for validating current terms before wider use.
@@ -53,6 +39,6 @@ Never commit `.env`, provider credentials, dumps, or personal holdings.
 
 ## Security
 
-This repository is public by design, but deployments are intended for a trusted LAN or a reverse proxy with authentication. The Compose file refuses to start without explicit database credentials; the production deployment script generates those credentials on the server and stores them in a mode-600 `.env` file outside Git.
+This repository is intended for private self-hosting on a trusted LAN or behind a reverse proxy with authentication. The Compose file refuses to start without explicit database credentials; the operator deployment helper generates those credentials on the server and stores them in a mode-600 `.env` file outside Git.
 
 The application is a monitoring tool, not a brokerage or account aggregator. Do not add brokerage credentials, transaction exports, or personal holdings data to this repository. See `SECURITY.md` for reporting a vulnerability.
