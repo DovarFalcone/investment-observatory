@@ -1,3 +1,4 @@
+from datetime import date as calendar_date
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -22,6 +23,7 @@ from app.services.market import (
 )
 from app.services.news import recent_news, sync_news_for_security
 from app.services.securities import get_or_create_security, search_securities
+from app.services.weekly_review import previous_calendar_week, weekly_review_data
 
 
 def get_db() -> Session:
@@ -170,6 +172,22 @@ def security_detail(security_id: int, request: Request, db: Session = Depends(ge
 @app.get("/api/securities/search")
 def search_api(q: str = Query(min_length=1, max_length=80)) -> list[dict[str, object]]:
     return [candidate.__dict__ for candidate in search_securities(q)]
+
+
+@app.get("/api/reviews/weekly-data")
+def weekly_review_api(
+    db: Session = Depends(get_db),
+    start: calendar_date | None = Query(default=None),
+    end: calendar_date | None = Query(default=None),
+) -> dict[str, object]:
+    if start is None and end is None:
+        start, end = previous_calendar_week()
+    elif start is None or end is None:
+        raise HTTPException(status_code=400, detail="start and end must be provided together")
+    try:
+        return weekly_review_data(db, start, end)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.post("/items")

@@ -119,3 +119,19 @@ def test_overview_renders_grouped_news_counts(client: TestClient) -> None:
 
     assert response.status_code == 200
     assert "2 related reports from 2 sources" in response.text
+
+
+def test_weekly_review_endpoint_defaults_to_previous_calendar_week(client: TestClient) -> None:
+    response = client.get("/api/reviews/weekly-data")
+
+    assert response.status_code == 200
+    assert set(response.json()) == {"period", "generated_at", "holdings", "watchlist", "notes"}
+    assert response.json()["holdings"] == []
+    assert response.json()["watchlist"] == []
+
+
+def test_weekly_review_endpoint_requires_both_dates(client: TestClient) -> None:
+    response = client.get("/api/reviews/weekly-data?start=2026-08-10")
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "start and end must be provided together"
