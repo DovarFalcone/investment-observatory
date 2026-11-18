@@ -7,11 +7,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 RUN addgroup --system app && adduser --system --ingroup app app
-COPY pyproject.toml README.md ./
+COPY pyproject.toml requirements.lock README.md ./
 COPY app ./app
 COPY migrations ./migrations
 COPY alembic.ini ./
-RUN pip install --upgrade pip && pip install .
+RUN pip install -c requirements.lock --upgrade pip && pip install -c requirements.lock .
 
 USER app
 EXPOSE 8000

@@ -8,7 +8,7 @@ A private, self-hosted investment journal for a calm daily review of holdings an
 cp .env.example .env
 python -m venv .venv
 . .venv/bin/activate
-pip install -e '.[dev]'
+pip install -c requirements.lock -e '.[dev]'
 uvicorn app.main:app --reload
 ```
 
