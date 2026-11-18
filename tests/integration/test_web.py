@@ -38,6 +38,14 @@ def test_empty_overview_does_not_show_fake_values(client: TestClient) -> None:
     assert "12,345" not in response.text
 
 
+def test_static_assets_do_not_pin_a_scheme(client: TestClient) -> None:
+    """Behind a TLS proxy, absolute http:// asset URLs are blocked as mixed content."""
+    response = client.get("/overview", headers={"X-Forwarded-Proto": "https"})
+    assert response.status_code == 200
+    assert 'href="/static/styles.css"' in response.text
+    assert 'src="/static/app.js"' in response.text
+
+
 def test_watchlist_page_is_reachable(client: TestClient) -> None:
     response = client.get("/watchlist")
     assert response.status_code == 200
